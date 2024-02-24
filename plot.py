@@ -1,5 +1,7 @@
 from datetime import datetime
 import seaborn as sns
+import matplotlib
+matplotlib.use('TkAgg')  # Or any other X11 back-end
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -8,7 +10,7 @@ import csv
 import sys
 
 if __name__ == '__main__':
-
+    
     if len(sys.argv) != 2:
         print("Usage is plot.py <resale_file.csv>")
         sys.exit(1)
@@ -37,6 +39,7 @@ if __name__ == '__main__':
     flat_counts = query['remaining_lease_int'].value_counts().sort_index(ascending=False)
     print(flat_counts)
     
+
     plt.figure(figsize=(12, 8))
     sb = sns.boxplot(x='remaining_lease_int', y='price_per_sqft', data=query)
     sb.invert_xaxis()

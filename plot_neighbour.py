@@ -1,6 +1,7 @@
 from datetime import datetime
 import seaborn as sns
 import matplotlib.pyplot as plt
+matplotlib.use('TkAgg')  # Or any other X11 back-end
 from scipy import spatial
 import pandas as pd
 import numpy as np

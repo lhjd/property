@@ -9,6 +9,68 @@ import time
 import csv
 import sys
 
+def plot(df, title):
+    plt.figure(figsize=(12, 8))
+    sb = sns.boxplot(x='remaining_lease_int', y='price_per_sqft', data=df)
+    sb.invert_xaxis()
+    
+    plt.title(title)
+    plt.xlabel('Remaining Lease (Years)')
+    plt.ylabel('Price Per Square Foot (SGD)')
+    plt.xticks(rotation=45)  # Rotate x-axis labels for better readability
+    plt.tight_layout()  # Adjust layout to make room for the rotated x-axis labels
+    plt.savefig('figure.png', format='png', dpi=300)
+    plt.show()
+
+def get_plot_title(towns, flat_types, flat_models_exclude, months_ago):
+    
+    town_title = 'ALL TOWNS'
+    flat_type_title = 'ALL FLATS'
+    exclude_title = ''
+    if towns: 
+        town_title = ", ".join(towns)
+    if flat_types:
+        flat_type_title = ", ".join(flat_types)
+    if flat_models_exclude:
+        exclude_title = "excluding {} flat models".format(", ".join(flat_models_exclude))
+
+    now = datetime.now()
+    # Extract the ISO week number
+    year, week_num, day_of_week = now.isocalendar()
+
+    title = """Price Per Square Foot vs Remaining Lease for {} 
+    Flats in {}, {} with transactions within {} 
+    months from Week {} {}""".format(
+        flat_type_title, town_title, exclude_title, months_ago, week_num, year
+    )
+
+    return title
+
+def query(df, towns, flat_types, flat_models_exclude, months_ago):
+
+    df['month'] = pd.to_datetime(df['month'])
+    query = df
+
+    if towns:
+        for town in towns:
+            query = query[query['town'] == town]
+    
+    if flat_types:
+        for flat_type in flat_types:
+            query = query[query['flat_type'] == flat_type]
+
+    if flat_models_exclude:
+        for flat_model_exclude in flat_models_exclude:
+            query = query[query['flat_model'] != flat_model_exclude]
+
+    if months_ago:
+        period_ago = pd.Timestamp.today() - pd.DateOffset(months=months_ago)
+        query = query[query['month'] >= period_ago]
+
+    flat_counts = query['remaining_lease_int'].value_counts().sort_index(ascending=False)
+
+    return query, flat_counts
+
 if __name__ == '__main__':
     
     if len(sys.argv) != 2:
@@ -17,44 +79,19 @@ if __name__ == '__main__':
     
     df = pd.read_csv(sys.argv[1])
 
-    town = ''
-    flat_type = '3 ROOM'
-    months_ago = 24
+    towns = ['QUEENSTOWN']
+    flat_types = ['4 ROOM']
+    flat_models_exclude = [
+        'Premium Apartment', 'Premium Apartment Loft', 'DBSS'
+    ]
+    months_ago = 12
 
-    # Convert months to panda's time format 
-    df['month'] = pd.to_datetime(df['month'])
-    period_ago = pd.Timestamp.today() - pd.DateOffset(months=months_ago)
-    
-    query = df
-    # Perform query is there is a town
-    if town:
-        query = query[query['town'] == town]
-    query = query[query['flat_type'] == flat_type]
-    query = query[query['flat_model'] != 'Premium Apartment']
-    query = query[query['flat_model'] != 'Premium Apartment Loft']
-    query = query[query['month'] >= period_ago]
-
-    print(query)
-
-    flat_counts = query['remaining_lease_int'].value_counts().sort_index(ascending=False)
+    df, flat_counts = query(df, towns, flat_types, flat_models_exclude, months_ago)
+    print(df)
     print(flat_counts)
-    
-
-    plt.figure(figsize=(12, 8))
-    sb = sns.boxplot(x='remaining_lease_int', y='price_per_sqft', data=query)
-    sb.invert_xaxis()
-
-    town_title = 'ALL TOWNS'
-    if town: 
-        town_title = town
-
-    title = "Price Per Square Foot vs Remaining Lease for {} Flats in {}, with transactions from {} months ago".format(flat_type, town_title, months_ago)
-    plt.title(title)
-    plt.xlabel('Remaining Lease (Years)')
-    plt.ylabel('Price Per Square Foot (SGD)')
-    plt.xticks(rotation=45)  # Rotate x-axis labels for better readability
-    plt.tight_layout()  # Adjust layout to make room for the rotated x-axis labels
-    plt.show()
+    title = get_plot_title(towns, flat_types, flat_models_exclude, months_ago)
+    plot(df, title)
+   
 
 
   

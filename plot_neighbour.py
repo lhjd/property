@@ -1,8 +1,8 @@
 from datetime import datetime
 import seaborn as sns
-import matplotlib.pyplot as plt
+import matplotlib
 matplotlib.use('TkAgg')  # Or any other X11 back-end
-from scipy import spatial
+import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import csv
@@ -41,11 +41,12 @@ if __name__ == '__main__':
     df['distance'] = np.sqrt((df['x'] - x_ref)**2 + (df['y'] - y_ref)**2)
 
     months_ago = 24
-    flat_type = '3 ROOM'
+    flat_type = ''
     period_ago = pd.Timestamp.today() - pd.DateOffset(months=months_ago)
     query = df
     query = query[query['month'] >= period_ago]
-    query = query[query['flat_type'] == flat_type]
+    if flat_type:
+        query = query[query['flat_type'] == flat_type]
     query = query[query['distance'] <= radius_in_m]
  
     # pd.set_option('display.max_rows', None)  # Replace None with a number if you only want to increase the limit
@@ -61,7 +62,16 @@ if __name__ == '__main__':
     sb = sns.boxplot(x='remaining_lease_int', y='price_per_sqft', data=query)
     sb.invert_xaxis()
 
-    title = "Price Per Square Foot vs Remaining Lease for {} Flats within {} meters from {} with transactions from {} months ago".format(flat_type, radius_in_m, addr, months_ago)
+    now = datetime.now()
+    year, week_num, day_of_week = now.isocalendar()
+
+    flat_title = 'ALL FLATS'
+    if flat_type: 
+        flat_title = flat_type
+
+    title = """Price Per Square Foot vs Remaining Lease for {} Flats within {} 
+    meters from {} with transactions within {} months from 
+    week {} {}""".format(flat_title, radius_in_m, addr, months_ago, week_num, year)
     plt.title(title)
     plt.xlabel('Flat Age (Years)')
     plt.ylabel('Price Per Square Foot (SGD)')
